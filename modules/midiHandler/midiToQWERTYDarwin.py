@@ -65,7 +65,7 @@ def isBlockedKey(keyObj):
     return False
 
 def isKeyboardKey(key):
-    return isinstance(key, str) and key.isdigit()
+    return False
 
 def press(key):
     if isKeyboardKey(key):
