@@ -39,7 +39,7 @@ else
     DMG_NAME="nanoMIDIPlayer-ARM.dmg"
 fi
 
-pyinstaller --onefile --noconsole --noconfirm \
+pyinstaller --noconsole --noconfirm \
     --target-architecture "$TARGET_ARCH" \
     --hidden-import=mido.backends.rtmidi \
     --hidden-import=tkinter \
