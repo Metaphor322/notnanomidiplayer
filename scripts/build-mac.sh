@@ -54,6 +54,8 @@ chmod +x dist/nanoMIDIPlayer.app
 mkdir -p dist/macOS-$ARCH
 mv dist/nanoMIDIPlayer.app dist/macOS-$ARCH/
 ln -s /Applications dist/macOS-$ARCH || true
+echo "Ad-hoc signing app bundle..."
+codesign --force --deep --sign - "dist/macOS-$ARCH/nanoMIDIPlayer.app"
 
 if ! command -v create-dmg &> /dev/null; then
     brew install create-dmg
