@@ -1,5 +1,5 @@
 name: Build Cross-Platform Artifacts
-
+# trigger reindex
 run-name: ${{ github.event.inputs.run_name || 'Build Cross-Platform Artifacts' }}
 
 on:
