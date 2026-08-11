@@ -31,6 +31,23 @@ source ./venv-mac/bin/activate
 pip install --upgrade pip setuptools wheel pyinstaller
 pip install -r requirements.txt
 
+# --- tkinter sanity check + Tcl/Tk path fix ---
+# Homebrew's tcl-tk is keg-only, so its dylibs aren't on the default
+# search path. PyInstaller needs TCL_LIBRARY / TK_LIBRARY set explicitly
+# or it can silently ship a broken/incomplete tkinter in the frozen app.
+if command -v brew &> /dev/null && brew --prefix tcl-tk &> /dev/null; then
+    TCLTK_PREFIX="$(brew --prefix tcl-tk)"
+    export LDFLAGS="-L${TCLTK_PREFIX}/lib${LDFLAGS:+ $LDFLAGS}"
+    export CPPFLAGS="-I${TCLTK_PREFIX}/include${CPPFLAGS:+ $CPPFLAGS}"
+    export PKG_CONFIG_PATH="${TCLTK_PREFIX}/lib/pkgconfig${PKG_CONFIG_PATH:+:$PKG_CONFIG_PATH}"
+    export TCL_LIBRARY="${TCLTK_PREFIX}/lib/tcl8.6"
+    export TK_LIBRARY="${TCLTK_PREFIX}/lib/tk8.6"
+    export DYLD_LIBRARY_PATH="${TCLTK_PREFIX}/lib${DYLD_LIBRARY_PATH:+:$DYLD_LIBRARY_PATH}"
+fi
+
+echo "Verifying tkinter is importable before freezing..."
+python3 -c "import tkinter; print('tkinter OK:', tkinter.TkVersion)"
+
 if [[ "$ARCH" == "intel" ]]; then
     TARGET_ARCH="x86_64"
     DMG_NAME="nanoMIDIPlayer-Intel.dmg"
@@ -44,11 +61,20 @@ pyinstaller --noconsole --noconfirm \
     --hidden-import=mido.backends.rtmidi \
     --hidden-import=tkinter \
     --hidden-import=_tkinter \
+    --collect-all=tkinter \
+    --collect-all=customtkinter \
     --add-data="assets:assets" \
     --paths="." \
     --name="nanoMIDIPlayer" \
     --icon="assets/icons/integrated/icon.ico" \
     main.py
+
+# Fail loudly here instead of shipping a broken .dmg if tkinter didn't
+# actually make it into the frozen bundle.
+if ! find "dist/nanoMIDIPlayer.app" -iname "*tcl*" -o -iname "*tk*" | grep -q .; then
+    echo "ERROR: No Tcl/Tk files found in the frozen app bundle. tkinter was not bundled correctly." >&2
+    exit 1
+fi
 
 chmod +x dist/nanoMIDIPlayer.app
 mkdir -p dist/macOS-$ARCH
