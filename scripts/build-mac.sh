@@ -41,14 +41,24 @@ pip install -r requirements.txt
 # Homebrew's tcl-tk is keg-only, so its dylibs aren't on the default
 # search path. PyInstaller needs TCL_LIBRARY / TK_LIBRARY set explicitly
 # or it can silently ship a broken/incomplete tkinter in the frozen app.
-if command -v brew &> /dev/null && brew --prefix tcl-tk &> /dev/null; then
-    TCLTK_PREFIX="$(brew --prefix tcl-tk)"
+if command -v brew &> /dev/null; then
+    if brew --prefix tcl-tk@8 &> /dev/null; then
+        TCLTK_PREFIX="$(brew --prefix tcl-tk@8)"
+    elif brew --prefix tcl-tk &> /dev/null; then
+        TCLTK_PREFIX="$(brew --prefix tcl-tk)"
+    fi
+fi
+
+if [[ -n "$TCLTK_PREFIX" ]]; then
     export LDFLAGS="-L${TCLTK_PREFIX}/lib${LDFLAGS:+ $LDFLAGS}"
     export CPPFLAGS="-I${TCLTK_PREFIX}/include${CPPFLAGS:+ $CPPFLAGS}"
     export PKG_CONFIG_PATH="${TCLTK_PREFIX}/lib/pkgconfig${PKG_CONFIG_PATH:+:$PKG_CONFIG_PATH}"
-    export TCL_LIBRARY="${TCLTK_PREFIX}/lib/tcl8.6"
-    export TK_LIBRARY="${TCLTK_PREFIX}/lib/tk8.6"
+    TCL_LIB_DIR="$(find "${TCLTK_PREFIX}/lib" -maxdepth 1 -type d -name 'tcl[0-9]*' | sort -V | tail -1)"
+    TK_LIB_DIR="$(find "${TCLTK_PREFIX}/lib" -maxdepth 1 -type d -name 'tk[0-9]*' | sort -V | tail -1)"
+    export TCL_LIBRARY="$TCL_LIB_DIR"
+    export TK_LIBRARY="$TK_LIB_DIR"
     export DYLD_LIBRARY_PATH="${TCLTK_PREFIX}/lib${DYLD_LIBRARY_PATH:+:$DYLD_LIBRARY_PATH}"
+    echo "Using Tcl/Tk from: $TCLTK_PREFIX (TCL_LIBRARY=$TCL_LIBRARY, TK_LIBRARY=$TK_LIBRARY)"
 fi
 
 echo "Verifying tkinter is importable before freezing..."
