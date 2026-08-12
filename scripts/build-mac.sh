@@ -26,7 +26,13 @@ echo "Building nanoMIDIPlayer for macOS ($ARCH)"
 rm -rf ./build ./dist ./venv-mac
 mkdir -p build dist
 
-python3 -m venv venv-mac
+if command -v brew &> /dev/null && brew --prefix python@3.11 &> /dev/null; then
+    PYTHON_BIN="$(brew --prefix python@3.11)/bin/python3.11"
+else
+    PYTHON_BIN="python3"
+fi
+
+"$PYTHON_BIN" -m venv venv-mac
 source ./venv-mac/bin/activate
 pip install --upgrade pip setuptools wheel pyinstaller
 pip install -r requirements.txt
