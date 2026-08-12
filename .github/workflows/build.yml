@@ -22,7 +22,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          brew install create-dmg tcl-tk python@3.11 python-tk@3.11 || true
+          rew install create-dmg tcl-tk@8 python@3.11 python-tk@3.11 || true
           brew link --overwrite python@3.11 || true
           echo "$(brew --prefix python@3.11)/bin" >> $GITHUB_PATH
           "$(brew --prefix python@3.11)/bin/python3.11" -m venv venv
@@ -49,7 +49,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          brew install create-dmg tcl-tk python@3.11 python-tk@3.11 || true
+          brew install create-dmg tcl-tk@8 python@3.11 python-tk@3.11 || true
           brew link --overwrite python@3.11 || true
           echo "$(brew --prefix python@3.11)/bin" >> $GITHUB_PATH
           "$(brew --prefix python@3.11)/bin/python3.11" -m venv venv
