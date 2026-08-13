@@ -37,6 +37,58 @@ source ./venv-mac/bin/activate
 pip install --upgrade pip setuptools wheel pyinstaller
 pip install -r requirements.txt
 
+echo "Patching darkdetect for frozen-app mac_ver() edge case..."
+python3 - <<'EOF'
+import darkdetect, os
+
+path = os.path.join(os.path.dirname(darkdetect.__file__), '__init__.py')
+with open(path) as f:
+    content = f.read()
+
+old = """def macos_supported_version():
+    sysver = platform.mac_ver()[0] #typically 10.14.2 or 12.3
+    major = int(sysver.split('.')[0])
+    if major < 10:
+        return False
+    elif major >= 11:
+        return True
+    else:
+        minor = int(sysver.split('.')[1])
+        if minor < 14:
+            return False
+        else:
+            return True"""
+
+new = """def macos_supported_version():
+    sysver = platform.mac_ver()[0] #typically 10.14.2 or 12.3
+    if not sysver:
+        return True
+    try:
+        major = int(sysver.split('.')[0])
+    except (ValueError, IndexError):
+        return True
+    if major < 10:
+        return False
+    elif major >= 11:
+        return True
+    else:
+        try:
+            minor = int(sysver.split('.')[1])
+        except (ValueError, IndexError):
+            return True
+        if minor < 14:
+            return False
+        else:
+            return True"""
+
+if old in content:
+    with open(path, 'w') as f:
+        f.write(content.replace(old, new))
+    print("darkdetect patched successfully")
+else:
+    print("WARNING: darkdetect source didn't match expected text — check installed version, patch skipped")
+EOF
+
 # --- tkinter sanity check + Tcl/Tk path fix ---
 # Homebrew's tcl-tk is keg-only, so its dylibs aren't on the default
 # search path. PyInstaller needs TCL_LIBRARY / TK_LIBRARY set explicitly
