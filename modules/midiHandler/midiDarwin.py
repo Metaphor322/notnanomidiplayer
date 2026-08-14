@@ -136,6 +136,9 @@ def pressAndMaybeRelease(key):
         t = threading.Timer(configuration.configData["midiPlayer"]["customHoldLength"]["noteLength"], _timerRelease)
         timerList.append(t)
         t.start()
+
+def simulateKey(msgType, note, velocity):
+    global heldNoteCount
     allow88 = configuration.configData["midiPlayer"]["88Keys"]
 
     letterNoteMap = configuration.configData["midiPlayer"]["pianoMap"]["61keyMap"]
@@ -192,7 +195,6 @@ def pressAndMaybeRelease(key):
             release("ctrl")
 
     elif msgType == "note_off":
-        global heldNoteCount
         if 36 <= note <= 96:
             if re.search("[!@$%^*(]", key):
                 release(letterNoteMap[str(note - 1)])
@@ -201,6 +203,10 @@ def pressAndMaybeRelease(key):
         else:
             release(key.lower())
         heldNoteCount = max(0, heldNoteCount - 1)
+
+def parseMidi(message):
+    global sustainActive
+    if message.type == "control_change" and configuration.configData["midiPlayer"]["sustain"]:
         if not sustainActive and message.value > configuration.configData["midiPlayer"]["sustainCutoff"]:
             sustainActive = True
             press("space")
