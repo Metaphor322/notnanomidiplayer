@@ -25,11 +25,6 @@ jobs:
           brew install create-dmg tcl-tk@8 python@3.11 python-tk@3.11 || true
           brew link --overwrite python@3.11 || true
           echo "$(brew --prefix python@3.11)/bin" >> $GITHUB_PATH
-          "$(brew --prefix python@3.11)/bin/python3.11" -m venv venv
-          source venv/bin/activate
-          pip install --upgrade pip setuptools wheel
-          pip install pyinstaller customtkinter
-          pip install -r requirements.txt
 
       - name: Build macOS Intel DMG
         run: |
@@ -52,11 +47,6 @@ jobs:
           brew install create-dmg tcl-tk@8 python@3.11 python-tk@3.11 || true
           brew link --overwrite python@3.11 || true
           echo "$(brew --prefix python@3.11)/bin" >> $GITHUB_PATH
-          "$(brew --prefix python@3.11)/bin/python3.11" -m venv venv
-          source venv/bin/activate
-          pip install --upgrade pip setuptools wheel
-          pip install pyinstaller customtkinter
-          pip install -r requirements.txt
 
       - name: Build macOS ARM DMG
         run: |
