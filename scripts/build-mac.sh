@@ -131,6 +131,7 @@ pyinstaller --noconsole --noconfirm \
     --hidden-import=_tkinter \
     --collect-all=tkinter \
     --collect-all=customtkinter \
+    --collect-submodules=modules \
     --add-data="assets:assets" \
     --paths="." \
     --name="nanoMIDIPlayer" \

@@ -22,6 +22,7 @@ pip install -r requirements.txt
 echo =^> Running PyInstaller to create .exe package...
 pyinstaller --onefile --noconsole --noconfirm ^
     --hidden-import=mido.backends.rtmidi ^
+    --collect-submodules=modules ^
     --add-data="assets;assets" ^
     --paths="." ^
     --name="nanoMIDIPlayer" ^
