@@ -16,6 +16,7 @@ log = mainFunctions.log
 inPort = None
 midiThread = None
 lowHighHeldCount = 0
+shiftHeldCount = 0
 
 def logKeys(action, key):
     if isinstance(key, pynputKeyboard.Key):
@@ -66,7 +67,7 @@ def isBlockedKey(keyObj):
     return False
 
 def isKeyboardKey(key):
-    return False
+    return isinstance(key, str) and (key.isdigit() or key in ["ctrl", "shift"])
 
 def press(key):
     if isKeyboardKey(key):
@@ -123,7 +124,7 @@ def pressAndMaybeRelease(key):
         t.start()
 
 def simulateKey(msgType, note, velocity):
-    global lowHighHeldCount
+    global lowHighHeldCount, shiftHeldCount
     if not -15 <= note - 36 <= 88:
         log(f"out of range: {note}")
         return
@@ -163,13 +164,15 @@ def simulateKey(msgType, note, velocity):
                 else:
                     release(key.lower())
             if re.search("[!@$%^*(]", key):
-                press("shift")
+                if shiftHeldCount == 0:
+                    press("shift")
+                shiftHeldCount += 1
                 pressAndMaybeRelease(letterNoteMap[str(note - 1)])
-                release("shift")
             elif key.isupper():
-                press("shift")
+                if shiftHeldCount == 0:
+                    press("shift")
+                shiftHeldCount += 1
                 pressAndMaybeRelease(key.lower())
-                release("shift")
             else:
                 pressAndMaybeRelease(key)
         else:
@@ -185,8 +188,15 @@ def simulateKey(msgType, note, velocity):
         if 36 <= note <= 96:
             if re.search("[!@$%^*(]", key):
                 release(letterNoteMap[str(note - 1)])
+                shiftHeldCount = max(0, shiftHeldCount - 1)
+                if shiftHeldCount == 0:
+                    release("shift")
             else:
                 release(key.lower())
+                if key.isupper():
+                    shiftHeldCount = max(0, shiftHeldCount - 1)
+                    if shiftHeldCount == 0:
+                        release("shift")
         else:
             release(key.lower())
             lowHighHeldCount = max(0, lowHighHeldCount - 1)
@@ -236,9 +246,16 @@ def startMidiInput(portName=None):
     return midiThread
 
 def stopMidiInput():
-    global closeThread, stopEvent, keyboardHandlers, timerList, inPort, midiThread
+    global closeThread, stopEvent, keyboardHandlers, timerList, inPort, midiThread, lowHighHeldCount, shiftHeldCount
     stopEvent.set()
     closeThread = True
+
+    if lowHighHeldCount > 0:
+        release("ctrl")
+        lowHighHeldCount = 0
+    if shiftHeldCount > 0:
+        release("shift")
+        shiftHeldCount = 0
 
     if inPort:
         try:
