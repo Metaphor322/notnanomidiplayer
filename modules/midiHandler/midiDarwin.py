@@ -92,6 +92,7 @@ playThread = None
 playbackSpeed = 1.0
 sustainActive = False
 heldNoteCount = 0
+lowHighHeldCount = 0
 
 def getPianoFingerLimit():
     return int(configuration.configData.get("midiPlayer", {}).get("fingerLimit", 11))
@@ -130,7 +131,7 @@ def pressAndMaybeRelease(key):
         t.start()
 
 def simulateKey(msgType, note, velocity):
-    global heldNoteCount
+    global heldNoteCount, lowHighHeldCount
     allow88 = configuration.configData["midiPlayer"]["88Keys"]
 
     letterNoteMap = configuration.configData["midiPlayer"]["pianoMap"]["61keyMap"]
@@ -182,9 +183,10 @@ def simulateKey(msgType, note, velocity):
                 pressAndMaybeRelease(key)
         else:
             release(key.lower())
-            press("ctrl")
+            if lowHighHeldCount == 0:
+                press("ctrl")
+            lowHighHeldCount += 1
             pressAndMaybeRelease(key.lower())
-            release("ctrl")
 
     elif msgType == "note_off":
         if 36 <= note <= 96:
@@ -194,6 +196,9 @@ def simulateKey(msgType, note, velocity):
                 release(key.lower())
         else:
             release(key.lower())
+            lowHighHeldCount = max(0, lowHighHeldCount - 1)
+            if lowHighHeldCount == 0:
+                release("ctrl")
         heldNoteCount = max(0, heldNoteCount - 1)
 
 def parseMidi(message):

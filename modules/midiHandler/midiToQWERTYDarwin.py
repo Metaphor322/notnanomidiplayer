@@ -15,6 +15,7 @@ log = mainFunctions.log
 
 inPort = None
 midiThread = None
+lowHighHeldCount = 0
 
 def logKeys(action, key):
     if isinstance(key, pynputKeyboard.Key):
@@ -122,6 +123,7 @@ def pressAndMaybeRelease(key):
         t.start()
 
 def simulateKey(msgType, note, velocity):
+    global lowHighHeldCount
     if not -15 <= note - 36 <= 88:
         log(f"out of range: {note}")
         return
@@ -172,9 +174,10 @@ def simulateKey(msgType, note, velocity):
                 pressAndMaybeRelease(key)
         else:
             release(key.lower())
-            press("ctrl")
+            if lowHighHeldCount == 0:
+                press("ctrl")
+            lowHighHeldCount += 1
             pressAndMaybeRelease(key.lower())
-            release("ctrl")
 
     elif msgType == "note_off":
         pianoWidget.up(note)
@@ -186,6 +189,9 @@ def simulateKey(msgType, note, velocity):
                 release(key.lower())
         else:
             release(key.lower())
+            lowHighHeldCount = max(0, lowHighHeldCount - 1)
+            if lowHighHeldCount == 0:
+                release("ctrl")
 
 def parseMidi(message):
     global sustainActive
