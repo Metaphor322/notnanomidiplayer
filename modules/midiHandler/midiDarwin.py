@@ -66,20 +66,28 @@ def isBlockedKey(keyObj):
 
 def press(key):
     keyObj = translateKey(key)
-    if isBlockedKey(keyObj):
-        return
-    pynputController.press(keyObj)
-    logKeys("press", keyObj)
-    heldKeys.add(keyObj)
+    if isinstance(keyObj, str) and (keyObj.isdigit() or keyObj in ["ctrl", "shift"]):
+        keyboard.press(keyObj)
+        logKeys("press", keyObj)
+    else:
+        if isBlockedKey(keyObj):
+            return
+        pynputController.press(keyObj)
+        logKeys("press", keyObj)
+        heldKeys.add(keyObj)
 
 def release(key):
     keyObj = translateKey(key)
-    if isBlockedKey(keyObj):
-        return
-    pynputController.release(keyObj)
-    logKeys("release", keyObj)
-    if keyObj in heldKeys:
-        heldKeys.remove(keyObj)
+    if isinstance(keyObj, str) and (keyObj.isdigit() or keyObj in ["ctrl", "shift"]):
+        keyboard.release(keyObj)
+        logKeys("release", keyObj)
+    else:
+        if isBlockedKey(keyObj):
+            return
+        pynputController.release(keyObj)
+        logKeys("release", keyObj)
+        if keyObj in heldKeys:
+            heldKeys.remove(keyObj)
 
 stopEvent = threading.Event()
 clockThreadRef = None
@@ -92,7 +100,8 @@ playThread = None
 playbackSpeed = 1.0
 sustainActive = False
 heldNoteCount = 0
-lowHighHeldCount = 0
+shiftHeldCount = 0
+ctrlHeldCount = 0
 
 def getPianoFingerLimit():
     return int(configuration.configData.get("midiPlayer", {}).get("fingerLimit", 11))
@@ -131,7 +140,7 @@ def pressAndMaybeRelease(key):
         t.start()
 
 def simulateKey(msgType, note, velocity):
-    global heldNoteCount, lowHighHeldCount
+    global heldNoteCount, shiftHeldCount, ctrlHeldCount
     allow88 = configuration.configData["midiPlayer"]["88Keys"]
 
     letterNoteMap = configuration.configData["midiPlayer"]["pianoMap"]["61keyMap"]
@@ -172,32 +181,41 @@ def simulateKey(msgType, note, velocity):
                 else:
                     release(key.lower())
             if re.search("[!@$%^*(]", key):
-                press("shift")
+                if shiftHeldCount == 0:
+                    press("shift")
+                shiftHeldCount += 1
                 pressAndMaybeRelease(letterNoteMap[str(note - 1)])
-                release("shift")
             elif key.isupper():
-                press("shift")
+                if shiftHeldCount == 0:
+                    press("shift")
+                shiftHeldCount += 1
                 pressAndMaybeRelease(key.lower())
-                release("shift")
             else:
                 pressAndMaybeRelease(key)
         else:
             release(key.lower())
-            if lowHighHeldCount == 0:
+            if ctrlHeldCount == 0:
                 press("ctrl")
-            lowHighHeldCount += 1
+            ctrlHeldCount += 1
             pressAndMaybeRelease(key.lower())
 
     elif msgType == "note_off":
         if 36 <= note <= 96:
             if re.search("[!@$%^*(]", key):
                 release(letterNoteMap[str(note - 1)])
+                shiftHeldCount = max(0, shiftHeldCount - 1)
+                if shiftHeldCount == 0:
+                    release("shift")
             else:
                 release(key.lower())
+                if key.isupper():
+                    shiftHeldCount = max(0, shiftHeldCount - 1)
+                    if shiftHeldCount == 0:
+                        release("shift")
         else:
             release(key.lower())
-            lowHighHeldCount = max(0, lowHighHeldCount - 1)
-            if lowHighHeldCount == 0:
+            ctrlHeldCount = max(0, ctrlHeldCount - 1)
+            if ctrlHeldCount == 0:
                 release("ctrl")
         heldNoteCount = max(0, heldNoteCount - 1)
 
@@ -385,13 +403,19 @@ def changeSpeed(amount):
     log(f"Speed: {playbackSpeed * 100:.0f}%")
 
 def stopPlayback():
-    global closeThread, stopEvent, playThread, clockThreadRef, keyboardHandlers, timerList, heldNoteCount
+    global closeThread, stopEvent, playThread, clockThreadRef, keyboardHandlers, timerList, heldNoteCount, shiftHeldCount, ctrlHeldCount
     if closeThread or stopEvent.is_set():
         return
     
     stopEvent.set()
     closeThread = True
     heldNoteCount = 0
+    if shiftHeldCount > 0:
+        release("shift")
+        shiftHeldCount = 0
+    if ctrlHeldCount > 0:
+        release("ctrl")
+        ctrlHeldCount = 0
     for key in list(heldKeys):
         try:
             release(key)
