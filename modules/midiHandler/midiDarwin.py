@@ -66,28 +66,20 @@ def isBlockedKey(keyObj):
 
 def press(key):
     keyObj = translateKey(key)
-    if isinstance(keyObj, str) and (keyObj.isdigit() or keyObj in ["ctrl", "shift"]):
-        keyboard.press(keyObj)
-        logKeys("press", keyObj)
-    else:
-        if isBlockedKey(keyObj):
-            return
-        pynputController.press(keyObj)
-        logKeys("press", keyObj)
-        heldKeys.add(keyObj)
+    if isBlockedKey(keyObj):
+        return
+    pynputController.press(keyObj)
+    logKeys("press", keyObj)
+    heldKeys.add(keyObj)
 
 def release(key):
     keyObj = translateKey(key)
-    if isinstance(keyObj, str) and (keyObj.isdigit() or keyObj in ["ctrl", "shift"]):
-        keyboard.release(keyObj)
-        logKeys("release", keyObj)
-    else:
-        if isBlockedKey(keyObj):
-            return
-        pynputController.release(keyObj)
-        logKeys("release", keyObj)
-        if keyObj in heldKeys:
-            heldKeys.remove(keyObj)
+    if isBlockedKey(keyObj):
+        return
+    pynputController.release(keyObj)
+    logKeys("release", keyObj)
+    if keyObj in heldKeys:
+        heldKeys.remove(keyObj)
 
 stopEvent = threading.Event()
 clockThreadRef = None
