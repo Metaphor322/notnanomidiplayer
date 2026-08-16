@@ -67,7 +67,7 @@ def isBlockedKey(keyObj):
     return False
 
 def isKeyboardKey(key):
-    return isinstance(key, str) and (key.isdigit() or key in ["ctrl", "shift"])
+    return False
 
 def press(key):
     if isKeyboardKey(key):
@@ -148,7 +148,7 @@ def simulateKey(msgType, note, velocity):
     pianoWidget = mainFunctions.getApp().frames["miditoqwerty"].piano
 
     if msgType == "note_on":
-        pianoWidget.down(note, velocity)
+        mainFunctions.getApp().after(0, lambda n=note, v=velocity: pianoWidget.down(n, v))
 
         if configuration.configData["midiToQwerty"]["velocity"]:
             velocityKey = findVelocityKey(velocity)
@@ -183,7 +183,7 @@ def simulateKey(msgType, note, velocity):
             pressAndMaybeRelease(key.lower())
 
     elif msgType == "note_off":
-        pianoWidget.up(note)
+        mainFunctions.getApp().after(0, lambda n=note: pianoWidget.up(n))
 
         if 36 <= note <= 96:
             if re.search("[!@$%^*(]", key):
@@ -295,7 +295,7 @@ def stopMidiInput():
     try:
         pianoWidget = mainFunctions.getApp().frames["miditoqwerty"].piano
         for note in pianoWidget.currentNotes():
-            pianoWidget.up(note)
+            mainFunctions.getApp().after(0, lambda n=note: pianoWidget.up(n))
     except Exception:
         pass
 
